@@ -1,4 +1,4 @@
-from pastila.fields import BaseField
+from pastila.fields import Field
 
 
 class Schema:
@@ -24,7 +24,7 @@ class Schema:
     def fields(self):
         return {
             name: field for name, field in
-            filter(lambda x: isinstance(x[1], BaseField), self.__class__.__dict__.items())
+            filter(lambda x: isinstance(x[1], Field), self.__class__.__dict__.items())
         }
 
     def load_to_field(self, field, value):

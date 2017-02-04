@@ -1,7 +1,8 @@
 from pastila.exceptions import ValidationError
+from copy import deepcopy
 
 
-class BaseField:
+class Field:
     value = None
     _validators = []
 
@@ -28,8 +29,11 @@ class BaseField:
         for validator in self._validators:
             validator(self.value, schema)
 
+    def clone(self):
+        return deepcopy(self)
 
-class StringField(BaseField):
+
+class StringField(Field):
     def _dump(self):
         return self.value
 
@@ -37,11 +41,7 @@ class StringField(BaseField):
         self.value = value
 
 
-class IntegerField(BaseField):
-
-    def __int__(self):
-        return self.value
-
+class IntegerField(Field):
     def _dump(self):
         return self.value
 
@@ -50,3 +50,21 @@ class IntegerField(BaseField):
             self.value = int(value)
         except ValueError:
             raise ValidationError('not valid integer')
+
+
+class ListField(Field):
+    base_field = None
+
+    def __init__(self, base_field, *args, **kwargs):
+        self.base_field = base_field
+        super(ListField, self).__init__(*args, **kwargs)
+
+    def _load(self, value):
+        self.value = []
+        for item in value:
+            field = self.base_field.clone()
+            field._load(item)
+            self.value.append(field)
+
+    def _dump(self):
+        return [item._dump() for item in self.value]
