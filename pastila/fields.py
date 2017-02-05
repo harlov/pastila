@@ -2,7 +2,7 @@ from pastila.exceptions import ValidationError
 from copy import deepcopy
 
 
-class Field:
+class Field(object):
     value = None
     _validators = []
 

@@ -3,4 +3,6 @@
 *.egg-info/
 build/
 env/
+env27/
 __pycache__
+*.pyc

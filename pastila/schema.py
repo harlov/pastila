@@ -1,7 +1,7 @@
 from pastila.fields import Field
 
 
-class Schema:
+class Schema(object):
 
     def load(self, data):
         for field, value in data.items():
