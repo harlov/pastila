@@ -2,6 +2,10 @@ from pastila.fields import Field
 
 
 class Schema(object):
+    data = None
+
+    def __init__(self):
+        self.data = {}
 
     def load(self, data):
         for field, value in data.items():
@@ -10,15 +14,18 @@ class Schema(object):
         self.validate()
 
     def validate(self):
-        for field in self.fields.values():
-            field._validate(self)
+        for name, field in self.fields.items():
+            field.validate(self.data[name], self)
 
     def dump(self):
         data = {}
         for name, field in self.fields.items():
-            data[name] = field._dump()
+            data[name] = field.dump()
 
         return data
+
+    def __getattr__(self, item):
+        return self.data[item]
 
     @property
     def fields(self):
@@ -31,4 +38,4 @@ class Schema(object):
         if field not in self.fields:
             return None
 
-        self.fields[field]._load(value)
+        self.data[field] = self.fields[field].load(value)

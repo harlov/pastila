@@ -6,3 +6,4 @@ env/
 env27/
 __pycache__
 *.pyc
+.idea
