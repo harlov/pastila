@@ -1,4 +1,7 @@
-from pastila.exceptions import ValidationError
+from pastila.exceptions import (
+    ValidationError,
+    NestedValidationError
+)
 
 
 class Field(object):
@@ -6,7 +9,7 @@ class Field(object):
 
     def __init__(self, validators=None):
         if validators is not None:
-            self._validators = validators
+            self._validators.extend(validators)
 
     def dump(self, value):
         return NotImplemented
@@ -46,7 +49,35 @@ class ListField(Field):
         super(ListField, self).__init__(*args, **kwargs)
 
     def load(self, value):
-        return [self.base_field.load(item) for item in value]
+        errors = {}
+        res = []
+        for ind, item in enumerate(value):
+            try:
+                res.append(self.base_field.load(item))
+            except ValidationError as exc:
+                errors.setdefault(str(ind), [])
+                errors[str(ind)].append(str(exc))
+            except NestedValidationError as exc:
+                errors[str(ind)] = exc.errors
+        if errors:
+            raise NestedValidationError(errors=errors)
+        return res
 
     def dump(self, value):
         return [self.base_field.dump(item) for item in value]
+
+
+class NestedField(Field):
+    schema_class = None
+
+    def __init__(self, schema, validators=None):
+        self.schema_class = schema
+        super(NestedField, self).__init__(validators)
+
+    def load(self, value):
+        schema = self.schema_class()
+        schema.load(value)
+        if schema.errors:
+            raise NestedValidationError(errors=schema.errors)
+
+        return schema.data

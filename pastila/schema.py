@@ -1,11 +1,39 @@
+from pastila.exceptions import (
+    ValidationError,
+    NestedValidationError
+)
 from pastila.fields import Field
 
 
 class Schema(object):
-    data = None
+    _data = None
+    _errors = None
+
+    @property
+    def data(self):
+        return self._data
+
+    @property
+    def errors(self):
+        return self._errors
+
+    @property
+    def fields(self):
+        return {
+            name: field for name, field in
+            filter(lambda x: isinstance(x[1], Field), self.__class__.__dict__.items())
+        }
 
     def __init__(self):
-        self.data = {}
+        self._data = dict()
+        self._errors = dict()
+
+    def set_error(self, field, exc):
+        if isinstance(exc, NestedValidationError):
+            self._errors[field] = exc.errors
+        else:
+            self._errors.setdefault(field, [])
+            self._errors[field].append(str(exc))
 
     def load(self, data):
         for field, value in data.items():
@@ -13,9 +41,17 @@ class Schema(object):
 
         self.validate()
 
+    def load_to_field(self, field, value):
+        if field not in self.fields:
+            return None
+        try:
+            self._data[field] = self.fields[field].load(value)
+        except (ValidationError, NestedValidationError) as exc:
+            self.set_error(field, exc)
+
     def validate(self):
         for name, field in self.fields.items():
-            field.validate(self.data[name], self)
+            field.validate(self._data.get(name), self)
 
     def dump(self):
         data = {}
@@ -25,17 +61,4 @@ class Schema(object):
         return data
 
     def __getattr__(self, item):
-        return self.data[item]
-
-    @property
-    def fields(self):
-        return {
-            name: field for name, field in
-            filter(lambda x: isinstance(x[1], Field), self.__class__.__dict__.items())
-        }
-
-    def load_to_field(self, field, value):
-        if field not in self.fields:
-            return None
-
-        self.data[field] = self.fields[field].load(value)
+        return self._data[item]

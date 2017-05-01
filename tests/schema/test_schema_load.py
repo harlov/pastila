@@ -1,21 +1,3 @@
-from pastila.schema import Schema
-from pastila.fields import StringField, IntegerField, ListField
-
-import pytest
-
-
-@pytest.fixture()
-def TestSchema():
-    class TestSchema(Schema):
-        name = StringField()
-        val1 = IntegerField()
-        val2 = IntegerField()
-        arr_str = ListField(base_field=StringField())
-        arr_int = ListField(base_field=IntegerField())
-
-    return TestSchema
-
-
 def test_schema_load(TestSchema):
     test = TestSchema()
     test.load({
